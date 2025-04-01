@@ -1,0 +1,50 @@
+/* styles.css */
+body {
+    background: #dcdcdc;
+    min-height: 100vh;
+    margin: 0;
+    font-family: Arial, sans-serif;
+  }
+  
+  .container {
+    padding: 20px;
+    border-radius: 10px;
+  }
+  
+  h2 {
+    color: white;
+    text-align: center;
+  }
+  
+  .text-input {
+    background-color: white;
+    border-radius: 5px;
+  }
+  
+  .search-button {
+    background: linear-gradient(45deg, #6a11cb, #2575fc);
+    color: white;
+    padding: 10px 20px;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 30px;
+  }
+  
+  .card-custom {
+    background: #dcdcdc;
+    color: #333;
+    border-radius: 15px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  }
+  
+  .card-custom img {
+    border-radius: 15px 15px 0 0;
+  }
+  
+  .view-button {
+    background: linear-gradient(45deg, #1e9600, #f7ff00);
+    color: #fff;
+    font-weight: bold;
+    border-radius: 20px;
+  }
+  
