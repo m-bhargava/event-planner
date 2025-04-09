@@ -5,9 +5,7 @@ env:
     REACT_APP_NAME: "event-planner"
     DEPLOY_USER: "ec2-user"
     APP_PORT: "3000"
-  secrets-manager:
-    EC2_SSH_KEY: "EC2_SSH_PRIVATE_KEY"
-    EC2_PUBLIC_IP: "EC2_PUBLIC_IP"
+    EC2_PUBLIC_IP: "16.171.199.57"
 
 phases:
   install:
@@ -36,23 +34,22 @@ phases:
       - zap-cli report -o reports/zap-report.html -f html
       - echo "Security scan completed."
 
-      # Deploy to EC2 using SCP
-      - echo "Configuring SSH Key..."
-      - mkdir -p ~/.ssh
-      - echo "$EC2_SSH_KEY" > ~/.ssh/id_rsa
-      - chmod 600 ~/.ssh/id_rsa
-      - ssh-keyscan -H $EC2_PUBLIC_IP >> ~/.ssh/known_hosts
-
-      - echo "Deploying to EC2 instance..."
-      - scp -r build/ $DEPLOY_USER@$EC2_PUBLIC_IP:/home/$DEPLOY_USER/$REACT_APP_NAME
-
-      - echo "Starting app with PM2..."
-      - ssh $DEPLOY_USER@$EC2_PUBLIC_IP "
-          cd /home/$DEPLOY_USER/$REACT_APP_NAME &&
-          npm install &&
-          pm2 stop $REACT_APP_NAME || true &&
-          pm2 start 'npx serve -s build -l $APP_PORT' --name $REACT_APP_NAME
-        "
+      # Deploy to EC2 using SSM (No SSH Key)
+      - echo "Deploying to EC2 instance via SSM..."
+      - aws ssm send-command \
+          --document-name "AWS-RunShellScript" \
+          --targets "[{\"Key\":\"InstanceIds\",\"Values\":[\"$EC2_INSTANCE_ID\"]}]" \
+          --parameters 'commands=[
+              "cd /home/ec2-user",
+              "rm -rf $REACT_APP_NAME",
+              "mkdir $REACT_APP_NAME",
+              "cd $REACT_APP_NAME",
+              "aws s3 cp s3://your-s3-bucket-name/build.zip .",
+              "unzip build.zip",
+              "npm install",
+              "pm2 stop $REACT_APP_NAME || true",
+              "pm2 start 'npx serve -s build -l $APP_PORT' --name $REACT_APP_NAME"
+          ]'
 
 artifacts:
   files:
