@@ -7,14 +7,17 @@ phases:
       - npm install
       - echo "Installing OWASP ZAP..."
       - sudo apt-get update && sudo apt-get install -y zaproxy
+
+  pre_build:
+    commands:
+      - echo "Running Unit Tests..."
+      - npm test || echo "Tests failed. Proceeding with security scan."
+
   build:
     commands:
       - echo "Building React App..."
       - npm run build
-  test:
-    commands:
-      - echo "Running Unit Tests..."
-      - npm test || echo "Tests failed. Proceeding with security scan."
+
   post_build:
     commands:
       - echo "Starting OWASP ZAP Security Scan..."
@@ -23,6 +26,12 @@ phases:
       - mkdir -p reports
       - zap-cli report -o reports/zap-report.html -f html
       - echo "Security scan completed."
+
+      # Deploy to EC2 using SCP
+      - echo "Deploying to EC2 instance..."
+      - scp -o StrictHostKeyChecking=no -i $EC2_SSH_KEY -r build/* ec2-user@$EC2_PUBLIC_IP:/home/ec2-user/react-app/
+      - ssh -o StrictHostKeyChecking=no -i $EC2_SSH_KEY ec2-user@$EC2_PUBLIC_IP "cd /home/ec2-user/react-app && npm install && pm2 restart all || pm2 start 'npx serve -s build -l 3000' --name react-app"
+
 artifacts:
   files:
     - reports/zap-report.html
