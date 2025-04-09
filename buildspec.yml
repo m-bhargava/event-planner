@@ -1,5 +1,14 @@
 version: 0.2
 
+env:
+  variables:
+    REACT_APP_NAME: "event-planner"
+    DEPLOY_USER: "ec2-user"
+    APP_PORT: "3000"
+  secrets-manager:
+    EC2_SSH_KEY: "EC2_SSH_PRIVATE_KEY"
+    EC2_PUBLIC_IP: "EC2_PUBLIC_IP"
+
 phases:
   install:
     commands:
@@ -28,9 +37,22 @@ phases:
       - echo "Security scan completed."
 
       # Deploy to EC2 using SCP
+      - echo "Configuring SSH Key..."
+      - mkdir -p ~/.ssh
+      - echo "$EC2_SSH_KEY" > ~/.ssh/id_rsa
+      - chmod 600 ~/.ssh/id_rsa
+      - ssh-keyscan -H $EC2_PUBLIC_IP >> ~/.ssh/known_hosts
+
       - echo "Deploying to EC2 instance..."
-      - scp -o StrictHostKeyChecking=no -i $EC2_SSH_KEY -r build/* ec2-user@$EC2_PUBLIC_IP:/home/ec2-user/react-app/
-      - ssh -o StrictHostKeyChecking=no -i $EC2_SSH_KEY ec2-user@$EC2_PUBLIC_IP "cd /home/ec2-user/react-app && npm install && pm2 restart all || pm2 start 'npx serve -s build -l 3000' --name react-app"
+      - scp -r build/ $DEPLOY_USER@$EC2_PUBLIC_IP:/home/$DEPLOY_USER/$REACT_APP_NAME
+
+      - echo "Starting app with PM2..."
+      - ssh $DEPLOY_USER@$EC2_PUBLIC_IP "
+          cd /home/$DEPLOY_USER/$REACT_APP_NAME &&
+          npm install &&
+          pm2 stop $REACT_APP_NAME || true &&
+          pm2 start 'npx serve -s build -l $APP_PORT' --name $REACT_APP_NAME
+        "
 
 artifacts:
   files:
