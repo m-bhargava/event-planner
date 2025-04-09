@@ -1,0 +1,31 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - echo "Installing dependencies..."
+      - npm install
+      - echo "Installing OWASP ZAP..."
+      - sudo apt-get update && sudo apt-get install -y zaproxy
+  build:
+    commands:
+      - echo "Building React App..."
+      - npm run build
+  test:
+    commands:
+      - echo "Running Unit Tests..."
+      - npm test || echo "Tests failed. Proceeding with security scan."
+  post_build:
+    commands:
+      - echo "Starting OWASP ZAP Security Scan..."
+      - zap-cli quick-scan --self-contained --start-options '-config api.disablekey=true' https://your-deployed-react-app-url
+      - echo "Generating OWASP ZAP report..."
+      - mkdir -p reports
+      - zap-cli report -o reports/zap-report.html -f html
+      - echo "Security scan completed."
+artifacts:
+  files:
+    - reports/zap-report.html
+    - '**/*'
+  base-directory: build
+  discard-paths: no
